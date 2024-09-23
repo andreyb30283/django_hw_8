@@ -28,9 +28,17 @@ from django.db import models
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
+        db_table = 'task_manager_category'
+
 
 class Task(models.Model):
-    title = models.CharField(max_length=255, unique=True, null=False)
+    title = models.CharField(max_length=255, unique=True)
     description = models.TextField(null=True)
     STATUS_CHOICES = [
         ('New', 'New'),
@@ -44,6 +52,15 @@ class Task(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField(Category)
 
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Задача"
+        verbose_name_plural = "Задачи"
+        db_table = "task_manager_task"
+        ordering = ['-created_at']
+
 
 class SubTask(models.Model):
     title = models.CharField(max_length=255)
@@ -52,3 +69,12 @@ class SubTask(models.Model):
     status = models.CharField(max_length=20, choices=Task.STATUS_CHOICES, default='New')
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Подзадача"
+        verbose_name_plural = "Подзадачи"
+        db_table = 'task_manager_subtask'
+        ordering = ['-created_at']
