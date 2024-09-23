@@ -5,7 +5,7 @@ from .models import Task, Category, SubTask
 
 
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ('title', 'status', 'deadline', 'creates_at')
+    list_display = ('title', 'status', 'deadline', 'created_at')
 
 
 class SubTaskAdmin(admin.ModelAdmin):
