@@ -27,6 +27,7 @@ from django.db import models
 
 class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    objects = models.Manager()
 
     def __str__(self):
         return self.name
@@ -38,6 +39,7 @@ class Category(models.Model):
 
 
 class Task(models.Model):
+    objects = models.Manager()
     title = models.CharField(max_length=255, unique=True)
     description = models.TextField(null=True)
     STATUS_CHOICES = [
@@ -50,7 +52,7 @@ class Task(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='New')
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-    categories = models.ManyToManyField(Category)
+    categories = models.ManyToManyField('Category')
 
     def __str__(self):
         return self.title
@@ -69,7 +71,7 @@ class SubTask(models.Model):
     status = models.CharField(max_length=20, choices=Task.STATUS_CHOICES, default='New')
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
-
+    objects = models.Manager()
     def __str__(self):
         return self.title
 
