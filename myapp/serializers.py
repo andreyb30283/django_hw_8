@@ -35,7 +35,7 @@ class CategoryCreateSerializer(serializers.ModelSerializer):
         if Category.objects.filter(name=name).exclude(pk=instance.pk).exists():
             raise serializers.ValidationError("Категория с таким названием уже существует.")
         instance.name = name
-        instance.description = validated_data.get('description', instance.description)
+        # instance.description = validated_data.get('description', instance.description)
         instance.save()
         return instance
 

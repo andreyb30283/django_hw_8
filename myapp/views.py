@@ -132,6 +132,8 @@ class TaskListView(APIView):
         serializer = TaskSerializer(queryset, many=True)
         return Response(serializer.data)
 '''
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 '''_________________________________________________________________________________________________'''
 '''
@@ -184,10 +186,22 @@ class SubTaskDetailUpdateDeleteView(APIView):
 '''__________________________________________________________________________'''
 
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from myapp.models import *
+# from myapp.models import *
 from .serializers import *
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategoryCreateSerializer
+
+    @action(detail=True, methods=['get'], name="Count Tasks nameParameter in @action, methods = ['get']")
+    def count_tasks(self, request, pk=None):
+        category = self.get_object()
+        task_count = Task.objects.filter(category=category).count()
+        return Response({'category_id': category.id, 'task_count': task_count})
 
 
 class TaskListCreateView(ListCreateAPIView):
