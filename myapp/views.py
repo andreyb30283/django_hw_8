@@ -132,8 +132,17 @@ class TaskListView(APIView):
         serializer = TaskSerializer(queryset, many=True)
         return Response(serializer.data)
 '''
+from datetime import datetime
+
+from django.contrib.auth import authenticate
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .permissions import IsOwner
 
 '''_________________________________________________________________________________________________'''
 '''
@@ -190,10 +199,11 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from .serializers import *
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets
+from rest_framework import viewsets, status, permissions
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
+    permission_classes = [AllowAny]
     queryset = Category.objects.all()
     serializer_class = CategoryCreateSerializer
 
@@ -205,6 +215,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class TaskListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwner]
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -213,13 +224,21 @@ class TaskListCreateView(ListCreateAPIView):
     ordering_fields = ['created_at']
     ordering = ['created_at']
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def get_queryset(self):
+        return Task.objects.filter(owner=self.request.user)
+
 
 class TaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwner]
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
 
 
 class SubTaskListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsOwner]
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -227,7 +246,62 @@ class SubTaskListCreateView(ListCreateAPIView):
     search_fields = ['title', 'description']
     ordering = ['created_at']
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    def get_queryset(self):
+        return SubTask.objects.filter(owner=self.request.user)
+
 
 class SubTaskRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOwner]
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
+
+
+class LogoutUserView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        response.delete_cookie(key='access_token')
+        response.delete_cookie(key='refresh_token')
+        return response
+
+
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request: Request, *args, **kwargs) -> Response:
+        username = request.data.get("username")
+        password = request.data.get("password")
+        user = authenticate(username=username, password=password)
+
+        if user:
+            refresh_token = RefreshToken.for_user(user)
+            access_token = refresh_token.access_token
+
+            access_expiry = datetime.utcfromtimestamp(access_token['exp'])
+            refresh_expiry = datetime.utcfromtimestamp(refresh_token['exp'])
+
+            response = Response(status=status.HTTP_200_OK)
+            response.set_cookie(
+                key='access_token',
+                value=str(access_token),
+                httponly=True,
+                secure=False,
+                samesite='Lax',
+                expires=access_expiry,
+            )
+            response.set_cookie(
+                key='refresh_token',
+                value=str(refresh_token),
+                httponly=True,
+                secure=False,
+                samesite='Lax',
+                expires=refresh_expiry,
+            )
+            return response
+        else:
+            return Response({'details': 'Invalid Credentials'},
+                            status=status.HTTP_401_UNAUTHORIZED)

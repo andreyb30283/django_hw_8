@@ -21,7 +21,7 @@
 # Описание: Категория выполнения.
 # Поля:
 # name: Название категории.
-
+from django.contrib.auth.models import User
 from django.db import models
 
 
@@ -53,6 +53,7 @@ class Task(models.Model):
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     categories = models.ManyToManyField('Category')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.title
@@ -72,6 +73,8 @@ class SubTask(models.Model):
     deadline = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+
     def __str__(self):
         return self.title
 
